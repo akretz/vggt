@@ -50,10 +50,12 @@ class PositionGetter:
             for each position in the grid, repeated for each batch item.
         """
         if (height, width) not in self.position_cache:
-            y_coords = torch.arange(height, device=device)
-            x_coords = torch.arange(width, device=device)
-            positions = torch.cartesian_prod(y_coords, x_coords)
-            self.position_cache[height, width] = positions
+            y_coords = torch.arange(height)
+            x_coords = torch.arange(width)
+            y_repeated = y_coords.repeat_interleave(width)
+            x_repeated = x_coords.repeat(height)
+            positions = torch.stack([y_repeated, x_repeated], dim=1)
+            self.position_cache[height, width] = positions.to(device)
 
         cached_positions = self.position_cache[height, width]
         return cached_positions.view(1, height * width, 2).expand(batch_size, -1, -1).clone()
