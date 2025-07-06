@@ -37,6 +37,7 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
         self.scale = self.head_dim**-0.5
+        self.qk_norm = qk_norm
         self.fused_attn = fused_attn
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
@@ -51,6 +52,9 @@ class Attention(nn.Module):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, self.head_dim).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
+        if self.qk_norm:
+            q = q.to(self.q_norm.weight.dtype)
+            k = k.to(self.k_norm.weight.dtype)
         q, k = self.q_norm(q), self.k_norm(k)
 
         if self.rope is not None:
